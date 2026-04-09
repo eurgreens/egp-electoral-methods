@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Utils\BordaElection;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -15,6 +16,13 @@ class Borda extends Command
      */
     public function handle()
     {
-        //
+        $election = new BordaElection(toElect: 8);
+        $election->addBordaPoints();
+        $results = $election->getResults();
+
+        $this->table(
+            ['#', 'Candidate', 'Gender', 'Points', 'Elected', 'Comments'],
+            $results
+        );
     }
 }
