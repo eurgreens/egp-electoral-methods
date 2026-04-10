@@ -17,9 +17,10 @@ class MNTV extends Command
     public function handle()
     {
         $election = new MNTVElection(toElect: 8);
-        $election->addMNTVPoints();
+        $election->count();
         $results = $election->getResults();
 
+        $this->info('MNTV');
         $this->table(
             ['#', 'Candidate', 'Gender', 'Points', 'Elected', 'Comments'],
             $results

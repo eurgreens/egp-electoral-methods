@@ -25,7 +25,7 @@ class MajorityJudgementElection extends Election
         $this->loadCandidates();
     }
 
-    public function addMajorityJudgementPoints(): self
+    public function count(): self
     {
         $candidateNames = array_keys($this->candidates);
         $gradesByCandidate = array_fill_keys($candidateNames, []);
@@ -54,8 +54,8 @@ class MajorityJudgementElection extends Election
             sort($grades);
 
             $medianValue = $this->medianValue($grades);
-            $higherGrades = count(array_filter($grades, fn(int $grade): bool => $grade > $medianValue));
-            $lowerGrades = count(array_filter($grades, fn(int $grade): bool => $grade < $medianValue));
+            $higherGrades = count(array_filter($grades, fn (int $grade): bool => $grade > $medianValue));
+            $lowerGrades = count(array_filter($grades, fn (int $grade): bool => $grade < $medianValue));
             $averageValue = array_sum($grades) / count($grades);
 
             $this->candidates[$candidateName]['votes'] = round(

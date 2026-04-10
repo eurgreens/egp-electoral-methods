@@ -18,7 +18,12 @@ class Election
 
     public function loadBallots(): self
     {
-        $ballots = file_get_contents(storage_path('app/ballots/' . $this->method . '.csv'));
+        try {
+            $ballots = file_get_contents(storage_path('app/ballots/' . $this->method . '.csv'));
+        } catch (\Exception $e) {
+            throw new \Exception("Error loading ballots file for method '{$this->method}': " . $e->getMessage());
+        }
+
         $ballots = explode("\n", $ballots);
         $this->ballots = array_map(function ($ballot) {
             return explode(',', $ballot);
@@ -29,15 +34,18 @@ class Election
 
     public function loadCandidates(): self
     {
-        $candidates = file_get_contents(storage_path('app/candidates.csv'));
+        try {
+            $candidates = file_get_contents(storage_path('app/candidates.csv'));
+        } catch (\Exception $e) {
+            throw new \Exception('Error loading candidates file: ' . $e->getMessage());
+        }
+
         $candidates = explode("\n", $candidates);
         foreach ($candidates as $candidate) {
-            $parts = explode(' - ', $candidate);
-            $name = trim($parts[0]);
-            $gender = trim($parts[1] ?? '');
+            [$name, $gender] = explode(' - ', $candidate);
             $this->candidates[$candidate] = [
-                'name' => $name,
-                'gender' => $gender,
+                'name' => trim($name),
+                'gender' => trim($gender),
                 'votes' => 0,
             ];
         }
@@ -58,7 +66,9 @@ class Election
     public function getResults(): array
     {
         $results = collect($this->candidates)
-            ->sortByDesc('votes')
+            ->sortByDesc(function (array $candidate): float|int {
+                return $candidate['sort_value'] ?? $candidate['votes'];
+            })
             ->values()
             ->map(function ($candidate, $i) {
                 return [
@@ -67,7 +77,7 @@ class Election
                     'gender' => $candidate['gender'],
                     'votes' => $candidate['votes'],
                     'elected' => $i < $this->toElect ? '✅' : '',
-                    'comments' => '',
+                    'comments' => $candidate['comments'] ?? '',
                 ];
             });
 
@@ -118,12 +128,12 @@ class Election
             $results = $results->map(function ($candidate, $index) use ($replacementFemaleIndexes, $displacedMaleIndexes) {
                 if (in_array($index, $replacementFemaleIndexes, true)) {
                     $candidate['elected'] = '✅';
-                    $candidate['comments'] = 'Elected due to gender balance';
+                    $candidate['comments'] = trim(($candidate['comments'] !== '' ? $candidate['comments'] . ' ' : '') . 'Elected due to gender balance');
                 }
 
                 if (in_array($index, $displacedMaleIndexes, true)) {
                     $candidate['elected'] = '❌';
-                    $candidate['comments'] = 'Not elected due to gender balance';
+                    $candidate['comments'] = trim(($candidate['comments'] !== '' ? $candidate['comments'] . ' ' : '') . 'Not elected due to gender balance');
                 }
 
                 return $candidate;
@@ -145,8 +155,9 @@ class Election
             $tiedNames = $tiedCandidates->pluck('name')->join(', ');
             $results = $results->map(function ($candidate) use ($tiedNames, $lastElectedVotes) {
                 if ($candidate['votes'] === $lastElectedVotes) {
-                    $candidate['comments'] .= " Tied with {$tiedNames}";
+                    $candidate['comments'] = trim($candidate['comments'] . " Tied with {$tiedNames}");
                 }
+
                 return $candidate;
             });
         }

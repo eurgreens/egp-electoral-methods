@@ -13,7 +13,7 @@ class DowdallElection extends Election
         $this->loadCandidates();
     }
 
-    public function addDowdallPoints(): self
+    public function count(): self
     {
         // Add points to candidates based on their rank in each ballot
         foreach ($this->ballots as $ballot) {

@@ -13,7 +13,7 @@ class MNTVElection extends Election
         $this->loadCandidates();
     }
 
-    public function addMNTVPoints(): self
+    public function count(): self
     {
         // Add points to candidates
         foreach ($this->ballots as $ballot) {

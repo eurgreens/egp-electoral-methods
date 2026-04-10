@@ -17,9 +17,10 @@ class Dowdall extends Command
     public function handle()
     {
         $election = new DowdallElection(toElect: 8);
-        $election->addDowdallPoints();
+        $election->count();
         $results = $election->getResults();
 
+        $this->info('Dowdall Count');
         $this->table(
             ['#', 'Candidate', 'Gender', 'Points', 'Elected', 'Comments'],
             $results

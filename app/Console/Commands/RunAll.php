@@ -15,13 +15,10 @@ class RunAll extends Command
      */
     public function handle()
     {
-        $this->info('Modified Borda Count');
+        $this->call('run:stv');
         $this->call('run:borda');
-        $this->info('Dowdall Count');
         $this->call('run:dowdall');
-        $this->info('Majority Judgement');
         $this->call('run:mj');
-        $this->info('MNTV');
         $this->call('run:mntv');
     }
 }

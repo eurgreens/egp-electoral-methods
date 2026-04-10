@@ -17,9 +17,10 @@ class MajorityJudgement extends Command
     public function handle()
     {
         $election = new MajorityJudgementElection(toElect: 8);
-        $election->addMajorityJudgementPoints();
+        $election->count();
         $results = $election->getResults();
 
+        $this->info('Majority Judgement');
         $this->table(
             ['#', 'Candidate', 'Gender', 'Points', 'Elected', 'Comments'],
             $results
