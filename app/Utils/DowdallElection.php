@@ -6,7 +6,7 @@ class DowdallElection extends Election
 {
     protected string $method;
 
-    public function __construct(protected int $toElect = 8)
+    public function __construct(protected int $toElect = 8, protected bool $test = false)
     {
         $this->method = 'dowdall';
         $this->loadBallots();

@@ -10,7 +10,7 @@ class Election
 
     protected array $candidates;
 
-    public function __construct(protected string $method = 'borda', protected int $toElect = 8)
+    public function __construct(protected string $method = 'borda', protected int $toElect = 8, protected bool $test = false)
     {
         $this->loadBallots();
         $this->loadCandidates();
@@ -18,8 +18,9 @@ class Election
 
     public function loadBallots(): self
     {
+        $folder = $this->test ? 'sample-ballots' : 'ballots';
         try {
-            $ballots = file_get_contents(storage_path('app/ballots/' . $this->method . '.csv'));
+            $ballots = file_get_contents(storage_path('app/' . $folder . '/' . $this->method . '.csv'));
         } catch (\Exception $e) {
             throw new \Exception("Error loading ballots file for method '{$this->method}': " . $e->getMessage());
         }

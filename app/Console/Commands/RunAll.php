@@ -16,6 +16,7 @@ class RunAll extends Command
     public function handle()
     {
         $this->call('run:stv');
+        $this->call('run:irv');
         $this->call('run:borda');
         $this->call('run:dowdall');
         $this->call('run:mj');

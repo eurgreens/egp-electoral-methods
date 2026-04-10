@@ -4,7 +4,7 @@ namespace App\Utils;
 
 class BordaElection extends Election
 {
-    public function __construct(protected int $toElect = 8)
+    public function __construct(protected int $toElect = 8, protected bool $test = false)
     {
         $this->method = 'borda';
         $this->loadBallots();
