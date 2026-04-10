@@ -6,7 +6,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 test('it counts stv ballots and ranks the transferred winners', function () {
-    $election = new STVElection(toElect: 8);
+    $election = new STVElection(toElect: 8, test: true);
     $election->count();
 
     $candidates = $election->getCandidates();
@@ -21,7 +21,7 @@ test('it counts stv ballots and ranks the transferred winners', function () {
 });
 
 test('it restricts later stv rounds to female candidates after four men are elected', function () {
-    $election = new STVElection(toElect: 8);
+    $election = new STVElection(toElect: 8, test: true);
     $election->count();
 
     $topEightResults = array_slice($election->getResults(), 0, 8);

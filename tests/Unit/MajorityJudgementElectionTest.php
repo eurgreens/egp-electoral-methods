@@ -6,7 +6,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 test('it ranks candidates using majority judgement grades', function () {
-    $election = new MajorityJudgementElection(toElect: 8);
+    $election = new MajorityJudgementElection(toElect: 8, test: true);
     $election->count();
 
     $candidates = $election->getCandidates();

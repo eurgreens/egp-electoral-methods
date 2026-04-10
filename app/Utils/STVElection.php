@@ -8,6 +8,8 @@ class STVElection extends Election
 {
     protected string $method;
 
+    protected array $roundSummaries = [];
+
     public function __construct(protected int $toElect = 8, protected bool $test = false)
     {
         $this->method = 'stv';
@@ -20,6 +22,7 @@ class STVElection extends Election
         $candidateNames = array_keys($this->candidates);
         $candidateIndexes = array_flip($candidateNames);
         $ballots = $this->normaliseBallots($candidateIndexes);
+        $this->roundSummaries = [];
 
         if ($ballots === []) {
             return $this;
@@ -59,6 +62,9 @@ class STVElection extends Election
 
             $round++;
             $femaleOnlyRound = count($eligibleCandidates) !== count($runningCandidates);
+            $restrictionReason = $femaleOnlyRound
+                ? 'Only female candidates are eligible this round to preserve gender balance.'
+                : null;
             [$tallies, $assignments] = $this->tallyBallots($weightedBallots, $statuses, $eligibleCandidates);
             $seatsRemaining = $this->toElect - $electedCount;
 
@@ -85,6 +91,27 @@ class STVElection extends Election
                 $genderBalanceNote = $femaleOnlyRound
                     ? ' Female-only round required to preserve gender balance.'
                     : '';
+                $reason = sprintf(
+                    '%s is elected with %.4f votes after reaching the quota of %.4f. Surplus %.4f transfers at a ratio of %.4f.%s',
+                    $this->candidates[$candidateName]['name'],
+                    $currentTally,
+                    $quota,
+                    $surplus,
+                    $transferRatio,
+                    $genderBalanceNote
+                );
+
+                $this->recordRound(
+                    round: $round,
+                    quota: $quota,
+                    seatsRemaining: $seatsRemaining,
+                    tallies: $tallies,
+                    eligibleCandidates: $eligibleCandidates,
+                    action: 'elected',
+                    candidateName: $candidateName,
+                    reason: $reason,
+                    restrictionReason: $restrictionReason,
+                );
 
                 $this->recordCandidateOutcome(
                     candidateName: $candidateName,
@@ -123,6 +150,26 @@ class STVElection extends Election
                 $genderBalanceNote = $femaleOnlyRound
                     ? ' Female-only round required to preserve gender balance.'
                     : '';
+                $reason = sprintf(
+                    '%s is elected with %.4f votes because only %d eligible candidate(s) remain for %d seat(s).%s',
+                    $this->candidates[$candidateName]['name'],
+                    $currentTally,
+                    count($eligibleCandidates),
+                    $seatsRemaining,
+                    $genderBalanceNote
+                );
+
+                $this->recordRound(
+                    round: $round,
+                    quota: $quota,
+                    seatsRemaining: $seatsRemaining,
+                    tallies: $tallies,
+                    eligibleCandidates: $eligibleCandidates,
+                    action: 'elected',
+                    candidateName: $candidateName,
+                    reason: $reason,
+                    restrictionReason: $restrictionReason,
+                );
 
                 $this->recordCandidateOutcome(
                     candidateName: $candidateName,
@@ -155,13 +202,36 @@ class STVElection extends Election
             $genderBalanceNote = $femaleOnlyRound
                 ? ' Female-only round required to preserve gender balance.'
                 : '';
+            $reason = sprintf(
+                '%s is eliminated with %.4f votes because they have the lowest tally among the eligible candidates.%s',
+                $this->candidates[$candidateName]['name'],
+                $tallies[$candidateName],
+                $genderBalanceNote
+            );
+
+            $this->recordRound(
+                round: $round,
+                quota: $quota,
+                seatsRemaining: $seatsRemaining,
+                tallies: $tallies,
+                eligibleCandidates: $eligibleCandidates,
+                action: 'eliminated',
+                candidateName: $candidateName,
+                reason: $reason,
+                restrictionReason: $restrictionReason,
+            );
 
             $this->recordCandidateOutcome(
                 candidateName: $candidateName,
                 tally: $tallies[$candidateName],
                 order: 0,
                 elected: false,
-                comment: sprintf('Eliminated in round %d with %.4f votes.%s', $round, $tallies[$candidateName], $genderBalanceNote)
+                comment: sprintf(
+                    'Eliminated in round %d with %.4f votes because this was the lowest eligible tally.%s',
+                    $round,
+                    $tallies[$candidateName],
+                    $genderBalanceNote
+                )
             );
         }
 
@@ -173,6 +243,52 @@ class STVElection extends Election
         }
 
         return $this;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getRoundSummaries(): array
+    {
+        return $this->roundSummaries;
+    }
+
+    /**
+     * @param  array<string, float>  $tallies
+     * @param  array<int, string>  $eligibleCandidates
+     */
+    private function recordRound(
+        int $round,
+        float $quota,
+        int $seatsRemaining,
+        array $tallies,
+        array $eligibleCandidates,
+        string $action,
+        string $candidateName,
+        string $reason,
+        ?string $restrictionReason,
+    ): void {
+        usort($eligibleCandidates, function (string $left, string $right) use ($tallies): int {
+            return ($tallies[$right] <=> $tallies[$left])
+                ?: strcmp($this->candidates[$left]['name'], $this->candidates[$right]['name']);
+        });
+
+        $this->roundSummaries[] = [
+            'round' => $round,
+            'quota' => round($quota, 4),
+            'seats_remaining' => $seatsRemaining,
+            'action' => $action,
+            'candidate' => $this->candidates[$candidateName]['name'],
+            'reason' => $reason,
+            'restriction_reason' => $restrictionReason,
+            'tallies' => array_map(function (string $eligibleCandidate) use ($tallies): array {
+                return [
+                    'name' => $this->candidates[$eligibleCandidate]['name'],
+                    'gender' => $this->candidates[$eligibleCandidate]['gender'],
+                    'votes' => round($tallies[$eligibleCandidate], 4),
+                ];
+            }, $eligibleCandidates),
+        ];
     }
 
     /**
